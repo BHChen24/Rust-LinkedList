@@ -1,8 +1,8 @@
+use crate::project_errors::{EmptyList, NotValidIndexError, OutOfIndexError};
 use std::error::Error;
 use std::marker::PhantomData;
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 use std::ptr::NonNull;
-use crate::project_errors::{NotValidIndexError, OutOfIndexError, EmptyList};
 
 struct Node<T> {
     data: Option<T>,
@@ -44,7 +44,15 @@ impl<T> Deref for Node<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
-        self.data.as_ref().expect("The data in current node is None.")
+        self.data
+            .as_ref()
+            .expect("The data in current node is None.")
+    }
+}
+
+impl<T> DerefMut for Node<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.data.as_mut().expect("The data in current node is None.")
     }
 }
 
@@ -57,8 +65,8 @@ pub struct MyLinkedList2<T> {
 
 impl<T> MyLinkedList2<T> {
     pub fn new() -> Self {
-        let mut head_sentinel = NonNull::new(Box::into_raw(Box::new(Node::new())));
-        let mut tail_sentinel = NonNull::new(Box::into_raw(Box::new(Node::new())));
+        let head_sentinel = NonNull::new(Box::into_raw(Box::new(Node::new())));
+        let tail_sentinel = NonNull::new(Box::into_raw(Box::new(Node::new())));
 
         unsafe {
             head_sentinel.unwrap().as_mut().next = tail_sentinel;
@@ -109,8 +117,8 @@ impl<T> MyLinkedList2<T> {
         }
 
         unsafe {
-            let mut front = self._get_front();
-            let mut helper = front.unwrap().as_ref().next;
+            let front = self._get_front();
+            let helper = front.unwrap().as_ref().next;
 
             let front_box = Box::from_raw(front.unwrap().as_ptr());
             let return_data = front_box.data;
@@ -119,7 +127,7 @@ impl<T> MyLinkedList2<T> {
             helper.unwrap().as_mut().prev = self.head;
 
             self.size -= 1;
-            Ok(return_data)
+            Ok(return_data.expect("Data unwrapped with None"))
         }
     }
 
@@ -129,8 +137,8 @@ impl<T> MyLinkedList2<T> {
         }
 
         unsafe {
-            let mut back = self._get_back();
-            let mut helper = back.unwrap().as_ref().prev;
+            let back = self._get_back();
+            let helper = back.unwrap().as_ref().prev;
 
             let back_box = Box::from_raw(back.unwrap().as_ptr());
             let return_data = back_box.data;
@@ -139,14 +147,14 @@ impl<T> MyLinkedList2<T> {
             helper.unwrap().as_mut().next = self.tail;
 
             self.size -= 1;
-            Ok(return_data)
+            Ok(return_data.expect("Data unwrapped with None"))
         }
     }
 
     pub fn push_front(&mut self, data: T) {
         let mut new_node = Box::new(Node::new_with(data));
 
-        let mut front = self._get_front();
+        let front = self._get_front();
         new_node.next = front;
         new_node.prev = self.head;
 
@@ -162,7 +170,7 @@ impl<T> MyLinkedList2<T> {
     pub fn push_back(&mut self, data: T) {
         let mut new_node = Box::new(Node::new_with(data));
 
-        let mut back = self._get_back();
+        let back = self._get_back();
         new_node.prev = back;
         new_node.next = self.tail;
 
@@ -175,11 +183,11 @@ impl<T> MyLinkedList2<T> {
         }
     }
 
-    pub fn into_iter(self) -> IntoIter<T> {
-        IntoIter{ list: self }
+    fn into_iter(self) -> IntoIter<T> {
+        IntoIter { list: self }
     }
 
-    pub fn iter(&self) -> Iter<'_, T> {
+    fn iter(&self) -> Iter<'_, T> {
         Iter {
             front: self._get_front(),
             back: self._get_back(),
@@ -188,7 +196,7 @@ impl<T> MyLinkedList2<T> {
         }
     }
 
-    pub fn iter_mut(&mut self) -> IterMut<'_, T> {
+    fn iter_mut(&mut self) -> IterMut<'_, T> {
         IterMut {
             front: self._get_front(),
             back: self._get_back(),
@@ -233,15 +241,37 @@ struct Iter<'a, T> {
     _marker: PhantomData<&'a T>,
 }
 
-impl <'a, T> Iterator for Iter<'a, T> {
+impl<'a, T> Iterator for Iter<'a, T> {
     type Item = &'a T;
 
     fn next(&mut self) -> Option<Self::Item> {
-
+        if self.front == self.back {
+            return None;
+        }
+        unsafe {
+            let data_ref = &*self.front.unwrap().as_ref();
+            self.front = self.front.unwrap().as_ref().next;
+            self.size -= 1;
+            Some(data_ref)
+        }
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
         (self.size, Some(self.size))
+    }
+}
+
+impl<'a, T> DoubleEndedIterator for Iter<'a, T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.back == self.front {
+            return None;
+        }
+        unsafe {
+            let data_ref = &*self.back.unwrap().as_ref();
+            self.back = self.back.unwrap().as_ref().prev;
+            self.size -= 1;
+            Some(data_ref)
+        }
     }
 }
 
@@ -252,10 +282,44 @@ struct IterMut<'a, T> {
     _marker: PhantomData<&'a mut T>,
 }
 
+impl<'a, T> Iterator for IterMut<'a, T> {
+    type Item = &'a mut T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.front == self.back {
+            return None;
+        }
+        unsafe {
+            let data_ref = &mut *self.front.unwrap().as_mut();
+            self.front = self.front.unwrap().as_ref().next;
+            self.size -= 1;
+            Some(data_ref)
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.size, Some(self.size))
+    }
+}
+
+impl<'a, T> DoubleEndedIterator for IterMut<'a, T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.back == self.front {
+            return None;
+        }
+        unsafe {
+            let data_ref = &mut *self.back.unwrap().as_mut();
+            self.back = self.back.unwrap().as_ref().prev;
+            self.size -= 1;
+            Some(data_ref)
+        }
+    }
+}
+
 fn _is_available_index(idx: usize, size: usize) -> bool {
-    idx >= 0 && idx <= size
+    idx <= size
 }
 
 fn _is_element_index(idx: usize, size: usize) -> bool {
-    idx >= 0 && idx < size
+    idx < size
 }
