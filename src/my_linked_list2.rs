@@ -3,6 +3,7 @@ use std::error::Error;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 use std::ptr::NonNull;
+use std::mem;
 
 #[derive(PartialEq, Eq)]
 struct Node<T> {
@@ -207,6 +208,26 @@ impl<T> MyLinkedList2<T> {
     }
 }
 
+impl<T> Drop for MyLinkedList2<T> {
+    fn drop(&mut self) {
+
+        struct DropGuard<'a, T>(&'a mut MyLinkedList2<T>);
+
+        impl<'a, T> Drop for DropGuard<'a, T> {
+            fn drop(&mut self) {
+                while self.0.pop_front().ok().is_some() {}
+            }
+        }
+
+        while let Some(node) = self.pop_front().ok() {
+            let guard = DropGuard(self);
+            drop(node);
+            mem::forget(guard);
+        }
+
+    }
+}
+
 struct IntoIter<T> {
     list: MyLinkedList2<T>,
 }
@@ -333,5 +354,21 @@ mod test {
     #[test]
     fn test_complie() {
 
+    }
+    
+    #[test]
+    fn initialize_list() {
+        let my_list: MyLinkedList2<i32> = MyLinkedList2::new();
+    }
+
+    #[test]
+    fn test_string_list() {
+        let mut string_list: MyLinkedList2<String> = MyLinkedList2::new();
+        string_list.push_front(String::from("a"));
+        string_list.push_front(String::from("b"));
+        string_list.push_front(String::from("c"));
+        for i in string_list.into_iter() {
+            println!("{:?}", i)
+        }
     }
 }
