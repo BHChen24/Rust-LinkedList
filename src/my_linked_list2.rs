@@ -4,7 +4,7 @@ use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 use std::ptr::NonNull;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(PartialEq, Eq)]
 struct Node<T> {
     data: Option<T>,
     next: Option<NonNull<Node<T>>>,
@@ -57,7 +57,6 @@ impl<T> DerefMut for Node<T> {
     }
 }
 
-#[derive(Debug)]
 pub struct MyLinkedList2<T> {
     size: usize,
     head: Option<NonNull<Node<T>>>,
