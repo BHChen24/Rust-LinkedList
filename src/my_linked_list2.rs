@@ -4,6 +4,7 @@ use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 use std::ptr::NonNull;
 
+#[derive(Debug, PartialEq, Eq)]
 struct Node<T> {
     data: Option<T>,
     next: Option<NonNull<Node<T>>>,
@@ -56,6 +57,7 @@ impl<T> DerefMut for Node<T> {
     }
 }
 
+#[derive(Debug)]
 pub struct MyLinkedList2<T> {
     size: usize,
     head: Option<NonNull<Node<T>>>,
@@ -322,4 +324,15 @@ fn _is_available_index(idx: usize, size: usize) -> bool {
 
 fn _is_element_index(idx: usize, size: usize) -> bool {
     idx < size
+}
+
+#[cfg(test)]
+mod test {
+
+    use super::MyLinkedList2;
+
+    #[test]
+    fn test_complie() {
+
+    }
 }
