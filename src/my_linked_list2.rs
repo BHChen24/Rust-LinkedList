@@ -1,4 +1,4 @@
-use crate::project_errors::{EmptyList, NotValidIndexError, OutOfIndexError};
+use crate::project_errors::{EmptyList, NotValidIndexError };
 use std::error::Error;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
@@ -37,8 +37,16 @@ impl<T> Node<T> {
         self.data.as_ref()
     }
 
+    fn get_mut(&mut self) -> Option<&mut T> {
+        self.data.as_mut()
+    }
+
     fn take(&mut self) -> Option<T> {
         self.data.take()
+    }
+
+    fn set(&mut self, data: T) {
+        self.data = Some(data);
     }
 }
 
@@ -185,6 +193,112 @@ impl<T> MyLinkedList2<T> {
         }
     }
 
+
+    pub fn peek(&self) -> Option<&T> {
+        if self.is_empty() {
+            return None;
+        }
+
+        let front = self._get_front();
+        unsafe {
+            let node_ref = front.unwrap().as_ref();
+            node_ref.data.as_ref()
+        }
+    }
+
+    pub fn peek_mut(&mut self) -> Option<&mut T> {
+        if self.is_empty() { return None; }
+        let front = self._get_front();
+        unsafe {
+            let node_mut = front.unwrap().as_mut();
+            node_mut.data.as_mut()
+        }
+    }
+
+    pub fn peek_back(&self) -> Option<&T> {
+        if self.is_empty() {return None ;}
+        let back = self._get_back();
+        unsafe {
+            let node_ref = back.unwrap().as_ref();
+            node_ref.data.as_ref()
+        }
+    }
+
+    pub fn peek_back_mut(&mut self) -> Option<&mut T> {
+        if self.is_empty() { return None; }
+        let back = self._get_back();
+        unsafe {
+            let node_mut = back.unwrap().as_mut();
+            node_mut.data.as_mut()
+        }
+    }
+
+    fn _get_index_cur(&self, index: usize) -> Option<NonNull<Node<T>>> {
+        let _ = self.check_element_index(index);
+
+        unsafe {
+            let mut cur = self._get_front();
+            for _ in 0..index {
+                cur = cur.unwrap().as_mut().next;
+            }
+            cur
+        }
+    }
+
+    pub fn get(&self, index: usize) -> Result<Option<&T>, Box<dyn Error>> {
+        if self.is_empty() {
+            return Err(Box::new(EmptyList {}));
+        }
+
+        self.check_element_index(index)?;
+
+        let data_option = unsafe { self._get_index_cur(index).unwrap().as_ref().get_ref() };
+        Ok(data_option)
+    }
+
+    pub fn get_mut(&mut self, index: usize) -> Result<Option<&mut T>, Box<dyn Error>> {
+        if self.is_empty() {
+            return Err(Box::new(EmptyList {}));
+        }
+
+        self.check_element_index(index)?;
+
+        let data_option = unsafe { self._get_index_cur(index).unwrap().as_mut().get_mut() };
+
+        Ok(data_option)
+
+    }
+
+    pub fn set(&mut self, index: usize, data: T) -> Result<(), Box<dyn Error>> {
+        if self.is_empty() { return Err(Box::new(EmptyList {})) }
+
+        self.check_element_index(index)?;
+
+        let mut cur = self._get_index_cur(index);
+        unsafe {
+            cur.unwrap().as_mut().set(data);
+            Ok(())
+        }
+    }
+
+    pub fn remove(&mut self, index: usize) -> Result<Option<T>, Box<dyn Error>> {
+        if self.is_empty() { return Err(Box::new(EmptyList {})); }
+        self.check_element_index(index)?;
+
+        let mut cur = self._get_index_cur(index);
+        unsafe {
+            let mut cur_next = cur.unwrap().as_mut().next;
+            let mut cur_prev = cur.unwrap().as_mut().prev;
+
+            cur_prev.unwrap().as_mut().next = cur_next;
+            cur_next.unwrap().as_mut().prev = cur_prev;
+            self.size -= 1;
+
+            let cur_box = Box::from_raw(cur.unwrap().as_ptr());
+            Ok(cur_box.data)
+        }
+    }
+
     fn into_iter(self) -> IntoIter<T> {
         IntoIter { list: self }
     }
@@ -210,7 +324,6 @@ impl<T> MyLinkedList2<T> {
 
 impl<T> Drop for MyLinkedList2<T> {
     fn drop(&mut self) {
-
         struct DropGuard<'a, T>(&'a mut MyLinkedList2<T>);
 
         impl<'a, T> Drop for DropGuard<'a, T> {
@@ -224,7 +337,6 @@ impl<T> Drop for MyLinkedList2<T> {
             drop(node);
             mem::forget(guard);
         }
-
     }
 }
 
@@ -348,14 +460,11 @@ fn _is_element_index(idx: usize, size: usize) -> bool {
 
 #[cfg(test)]
 mod test {
-
     use super::MyLinkedList2;
 
     #[test]
-    fn test_complie() {
+    fn test_compile() {}
 
-    }
-    
     #[test]
     fn initialize_list() {
         let my_list: MyLinkedList2<i32> = MyLinkedList2::new();
