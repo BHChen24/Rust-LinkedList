@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::error::Error;
 
 struct BSTNode<T>
@@ -15,7 +16,7 @@ where
 {
     fn new(data: T) -> Self {
         Self {
-            data: data,
+            data,
             left: None,
             right: None,
         }
@@ -45,7 +46,40 @@ impl<T> MyBST<T>
 where
     T: Ord,
 {
-    fn new() -> Self {
+    pub fn new() -> Self {
+        Self {
+            root: None,
+        }
+    }
+
+    pub fn search(&self, target: &T) -> bool {
+        match &self.root {
+            Some(node) => {
+                match target.cmp(&node.data) {
+                    Ordering::Equal => {
+                        true
+                    },
+                    Ordering::Greater => {
+                        match &node.left {
+                            Some(left_node) => {
+                                
+                            },
+                            None => {false},
+                        }
+                    },
+                    Ordering::Less => {}
+                }
+            }
+            None => return false
+        }
+    }
+}
+
+impl<T> Default for MyBST<T>
+where
+    T: Ord,
+{
+    fn default() -> Self {
         Self {
             root: None,
         }
