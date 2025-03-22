@@ -47,30 +47,37 @@ where
     T: Ord,
 {
     pub fn new() -> Self {
-        Self {
-            root: None,
+        Self { root: None }
+    }
+
+    fn _search_node(node: &BSTNode<T>, target: &T) -> bool {
+        match target.cmp(&node.data) {
+            Ordering::Equal => {
+                true
+            },
+            Ordering::Greater => {
+                match &node.right {
+                    Some(right) => {
+                        Self::_search_node(right, target)
+                    },
+                    None => false,
+                }
+            },
+            Ordering::Less => {
+                match &node.left {
+                    Some(left) => {
+                        Self::_search_node(left, target)
+                    },
+                    None => false
+                }
+            }
         }
     }
 
     pub fn search(&self, target: &T) -> bool {
         match &self.root {
-            Some(node) => {
-                match target.cmp(&node.data) {
-                    Ordering::Equal => {
-                        true
-                    },
-                    Ordering::Greater => {
-                        match &node.left {
-                            Some(left_node) => {
-                                
-                            },
-                            None => {false},
-                        }
-                    },
-                    Ordering::Less => {}
-                }
-            }
-            None => return false
+            Some(node) => Self::_search_node(node, target),
+            None => return false,
         }
     }
 }
@@ -80,8 +87,6 @@ where
     T: Ord,
 {
     fn default() -> Self {
-        Self {
-            root: None,
-        }
+        Self { root: None }
     }
 }
