@@ -31,6 +31,21 @@ class MyBST:
 
     def __init__(self):
         self.root = self.BSTreeNode()
+        
+    def traverse(self, node):
+        if node is None:
+            return
+        
+        # pre-order
+        print(node)
+        
+        self.traverse(node.left)
+        # in-order
+        print(node)
+        
+        self.traverse(node.right)
+        # post-order
+        print(node)
 
     def search(self, node, target):
         if node is None:
@@ -38,8 +53,7 @@ class MyBST:
 
         if node.data == target:
             return True
-
-        if target < node.data:
+        elif target < node.data:
             return self.search(node.left, target)
         else:
             return self.search(node.right, target)

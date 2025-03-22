@@ -29,6 +29,7 @@ impl<T> Node<T> {
         }
     }
 
+    #[allow(dead_code)]
     fn into_val(self) -> Option<T> {
         self.data
     }
@@ -41,6 +42,7 @@ impl<T> Node<T> {
         self.data.as_mut()
     }
 
+    #[allow(dead_code)]
     fn take(&mut self) -> Option<T> {
         self.data.take()
     }
@@ -274,7 +276,7 @@ impl<T> MyLinkedList2<T> {
 
         self.check_element_index(index)?;
 
-        let mut cur = self._get_index_cur(index);
+        let cur = self._get_index_cur(index);
         unsafe {
             cur.unwrap().as_mut().set(data);
             Ok(())
@@ -285,10 +287,10 @@ impl<T> MyLinkedList2<T> {
         if self.is_empty() { return Err(Box::new(EmptyList {})); }
         self.check_element_index(index)?;
 
-        let mut cur = self._get_index_cur(index);
+        let cur = self._get_index_cur(index);
         unsafe {
-            let mut cur_next = cur.unwrap().as_mut().next;
-            let mut cur_prev = cur.unwrap().as_mut().prev;
+            let cur_next = cur.unwrap().as_mut().next;
+            let cur_prev = cur.unwrap().as_mut().prev;
 
             cur_prev.unwrap().as_mut().next = cur_next;
             cur_next.unwrap().as_mut().prev = cur_prev;
